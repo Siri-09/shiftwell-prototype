@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shiftwell Swap Rules Engine – Prototype</title>
+<style>
+:root{--bg:#f3f6fb;--c:#fff;--t:#14233b;--m:#5b6b82;--b:#d5dde9;--p:#1f56a8;--g:#e7f6ee;--gt:#146c3f;--y:#fff4d6;--yt:#8a5a00;--r:#fde8e8;--rt:#a12020}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1522;--c:#172134;--t:#e8eef9;--m:#9aabc4;--b:#2a3a55;--p:#5b9bff;--g:#10301f;--gt:#6fdc9f;--y:#3a2f0e;--yt:#ffd36b;--r:#3a1618;--rt:#ff9a9a}}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 system-ui,Arial,sans-serif;background:var(--bg);color:var(--t)}
+header{background:#14294b;color:#fff;padding:14px 18px;font-weight:700;font-size:18px}header span{color:#8db4ff}
+main{max-width:980px;margin:0 auto;padding:16px}h1{font-size:24px;margin:8px 0 4px}p.s{color:var(--m);margin:0 0 12px}
+.card{background:var(--c);border:1px solid var(--b);border-radius:14px;padding:16px;margin:0 0 14px}h2{font-size:16px;margin:0 0 10px}
+.k{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.k div{background:var(--c);border:1px solid var(--b);border-radius:12px;padding:12px}.k b{font-size:24px;display:block}.k small{color:var(--m)}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}label{font-size:13px;font-weight:600;display:block;margin-bottom:3px}
+select,input,button{font:inherit;width:100%;padding:9px;border:1px solid var(--b);border-radius:9px;background:var(--c);color:var(--t)}
+button{background:var(--p);color:#fff;border:0;font-weight:700;cursor:pointer;width:auto;padding:9px 16px}button.s2{background:var(--bg);color:var(--t);border:1px solid var(--b)}
+.dec{border-radius:12px;padding:14px;border:1px solid}.AUTO{background:var(--g);color:var(--gt)}.ESC{background:var(--y);color:var(--yt)}.BLOCK{background:var(--r);color:var(--rt)}
+.dec .tag{font-size:12px;font-weight:800;letter-spacing:.06em}.dec h3{margin:2px 0 6px;font-size:20px;color:var(--t)}
+ul.ck{list-style:none;padding:0;margin:8px 0 0}ul.ck li{padding:3px 0}.ok::before{content:"✔ ";color:var(--gt)}.no::before{content:"✖ ";color:var(--rt)}.wa::before{content:"▲ ";color:var(--yt)}
+.facts{font-size:13px;color:var(--m);margin-top:6px}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:6px;border-bottom:1px solid var(--b);vertical-align:top}
+.sc{overflow-x:auto}small.n{color:var(--m);display:block;margin-top:8px}.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+</style></head><body>
+<header>shiftwell <span>/</span> product lab</header>
+<main>
+<h1>Swap Rules Engine</h1>
+<p class="s">Concept prototype (not production software). Auto-approve safe swaps, escalate exceptions, block violations. Built for the Product Intern case study by Velagada Sirisha.</p>
+<div class="k"><div><b>38%</b><small>FreshBowl swaps approved within 24 hrs today</small></div><div><b id="kp">91%</b><small>projected with rules engine (see section 4)</small></div><div><b>2,900</b><small>FreshBowl swap requests / month</small></div><div><b>6.5 hrs</b><small>FreshBowl manager scheduling time / week</small></div></div>
+<div class="card" style="margin-top:14px"><h2>1 · Choose a scenario</h2>
+<div class="g"><div><label>Quick scenario</label><select id="qs"></select></div>
+<div><label>Account (rules are set per account)</label><select id="ac"></select></div>
+<div><label>Person taking the shift</label><select id="st"></select></div>
+<div><label>Shift station</label><select id="sn"></select></div>
+<div><label>Shift date</label><input type="date" id="dt" value="2026-10-21"></div>
+<div><label>Shift hours</label><input type="number" id="hr" value="8" min="1" max="16"></div>
+<div><label>Weekly hours cap (account rule)</label><input type="number" id="cap" value="48" min="1"></div>
+<div><label>Over-cap swaps go to</label><select id="ap"><option>Location Manager</option><option>Regional Manager</option></select></div></div>
+<div class="facts" id="fx"></div><div class="row"><button id="ev">Evaluate swap</button></div></div>
+<div class="card"><h2>2 · Decision and reasons</h2><div id="out" class="dec ESC"><div class="tag">READY</div><h3>Press “Evaluate swap”</h3></div>
+<small class="n">Principle: auto-approve only when every check passes; block known policy violations; send missing or uncertain data to a human. Managers can review and reverse any auto-approval (audit log below).</small></div>
+<div class="card"><h2>3 · Audit log (saved in this browser)</h2><div class="sc"><table><thead><tr><th>Time</th><th>Scenario</th><th>Decision</th><th>Reason</th></tr></thead><tbody id="lg"><tr><td colspan="4">No decisions yet.</td></tr></tbody></table></div>
+<div class="row"><button class="s2" id="cl">Clear log</button><button class="s2" id="run">Run all 13 test swaps</button></div></div>
+<div class="card"><h2>4 · Impact model</h2><label>Share of swaps that are routine and auto-approvable: <b id="shv">85%</b></label><input type="range" id="sh" min="50" max="95" value="85">
+<div class="sc"><table><thead><tr><th>Account</th><th>ARR (₹L)</th><th>Approved in 24 hrs today</th><th>Projected</th></tr></thead><tbody id="im"></tbody></table></div>
+<small class="n">Projected = share + (1 − share) × today’s rate (the non-routine swaps keep today’s speed). The 85% is an assumption to validate in a pilot. WhatsApp at ~4 messages per swap would cost about ₹1.7L a year across all accounts, so cost is not why it is deferred; manual approval would still be the bottleneck.</small></div>
+<small class="n">Sample staff, dates and swaps are made-up test data. Account figures come from the case data pack. Not connected to WhatsApp or any Shiftwell system. 48 hrs is configurable because labour rules differ by state; confirm customer policy before use.</small>
+</main>
+<script>
+const ACC={"FreshBowl":{cap:48,ap:"Location Manager"},"CarePoint Clinics":{cap:48,ap:"Location Manager"},"UrbanMart":{cap:48,ap:"Regional Manager"}};
+const NEED={"Nurse":["bls","council"]};
+const S=[["S01","Arjun","FreshBowl","Cook","Grill;Fryer",null,null,30],["S02","Meena","FreshBowl","Cook","Prep;Grill",null,null,36],["S03","Ravi","FreshBowl","Cook","Fryer",null,null,44],["S04","Sana","FreshBowl","Cashier","Counter",null,null,20],
+["S05","Priya","CarePoint Clinics","Nurse","OPD;Triage","2026-10-24","2027-08-31",30],["S06","Divya","CarePoint Clinics","Nurse","OPD;Ward","2026-09-15","2027-06-30",28],["S07","Kavya","CarePoint Clinics","Nurse","Triage;Ward","2027-03-31","2026-08-01",32],["S08","Isha","CarePoint Clinics","Receptionist","Front Desk",null,null,24],
+["S09","Rahul","UrbanMart","Store Associate","Billing;Floor",null,null,40],["S10","Neha","UrbanMart","Store Associate","Floor;Stockroom",null,null,45],["S11","Kiran","UrbanMart","Store Associate","Billing",null,null,38],["S12","Vikram","UrbanMart","Store Associate","Floor;Stockroom",null,null,46]].map(a=>({id:a[0],n:a[1],ac:a[2],role:a[3],tr:a[4].split(";"),bls:a[5],co:a[6],h:a[7]}));
+const Q=[["W01 FreshBowl: trained, under cap","FreshBowl","S02","Grill","2026-10-19",8],["W02 FreshBowl: would exceed 48h","FreshBowl","S03","Fryer","2026-10-20",8],["W03 FreshBowl: not trained for station","FreshBowl","S04","Grill","2026-10-21",6],["W04 FreshBowl: cashier on counter","FreshBowl","S04","Counter","2026-10-22",6],
+["C01 CarePoint: nurse, valid certificates","CarePoint Clinics","S05","OPD","2026-10-21",8],["C02 CarePoint: BLS expires before shift","CarePoint Clinics","S05","OPD","2026-10-26",8],["C03 CarePoint: BLS already expired","CarePoint Clinics","S06","Ward","2026-10-20",8],["C04 CarePoint: council registration expired","CarePoint Clinics","S07","Triage","2026-10-22",8],["C05 CarePoint: receptionist (no certificate needed)","CarePoint Clinics","S08","Front Desk","2026-10-23",8],
+["U01 UrbanMart: 46h, under cap","UrbanMart","S09","Billing","2026-10-19",6],["U02 UrbanMart: 53h, regional approval","UrbanMart","S10","Floor","2026-10-20",8],["U03 UrbanMart: 50h, regional approval","UrbanMart","S12","Stockroom","2026-10-21",4],["U04 UrbanMart: 46h, under cap","UrbanMart","S11","Billing","2026-10-22",8]];
+const $=i=>document.getElementById(i);let LOG=[];
+function ev(a){const p=S.find(x=>x.id===a.sid),c=[];let d="AUTO";
+ const need=NEED[p.role]||[];
+ if(need.length){const miss=[];const bad=[];
+  [["bls","BLS certificate",p.bls],["council","Nursing council registration",p.co]].forEach(([k,l,v])=>{if(!need.includes(k))return;if(!v)miss.push(l);else if(v<a.dt)bad.push(l+" expired "+v);});
+  if(bad.length){d="BLOCK";c.push(["no","Certificate invalid on shift date: "+bad.join("; ")])}
+  else if(miss.length){d="ESC";c.push(["wa","No expiry date on file for "+miss.join(", ")+" (needs human review)"])}
+  else c.push(["ok","Required certificates valid on "+a.dt])}
+ else c.push(["ok","No certificate required for "+p.role]);
+ const tr=p.tr.includes(a.sn);
+ if(!tr){if(d==="AUTO")d="ESC";c.push(["wa","Not trained for "+a.sn+" (sent to Location Manager)"])}else c.push(["ok","Trained for "+a.sn]);
+ const t=p.h+a.hr;
+ if(t>a.cap){if(d==="AUTO")d="ESC";c.push(["wa",t+"h would exceed the "+a.cap+"h cap (sent to "+a.ap+")"])}else c.push(["ok",t+"h is within the "+a.cap+"h cap"]);
+ const T={AUTO:["AUTO-APPROVE","Approved instantly","All checks passed. No manager time needed."],ESC:["ESCALATE","Needs a human decision","Only exceptions reach a manager."],BLOCK:["BLOCK","Cannot be scheduled","A known compliance rule is violated, so nobody is asked to approve it."]}[d];
+ return{d,t:T,c,p,tot:t}}
+function cur(){return{sid:$("st").value,sn:$("sn").value,dt:$("dt").value,hr:+$("hr").value,cap:+$("cap").value,ap:$("ap").value,ac:$("ac").value,sc:$("qs").selectedOptions[0].text}}
+function show(r){$("out").className="dec "+r.d;$("out").innerHTML=`<div class="tag">${r.t[0]}</div><h3>${r.t[1]}</h3>${r.t[2]}<ul class="ck">${r.c.map(x=>`<li class="${x[0]}">${x[1]}</li>`).join("")}</ul>`}
+function facts(){const p=S.find(x=>x.id===$("st").value);$("fx").textContent=`${p.n}, ${p.role}. Trained: ${p.tr.join(", ")}. Hours scheduled: ${p.h}.`+(NEED[p.role]?` BLS expires ${p.bls||"n/a"}; council registration expires ${p.co||"n/a"}.`:"")}
+function log(a,r){LOG.unshift({t:new Date().toLocaleTimeString(),s:a.sc,d:r.t[0],r:r.c.filter(x=>x[0]!=="ok").map(x=>x[1]).join("; ")||"All checks passed"});LOG=LOG.slice(0,40);try{localStorage.setItem("swlog",JSON.stringify(LOG))}catch(e){}draw()}
+function draw(){$("lg").innerHTML=LOG.length?LOG.map(l=>`<tr><td>${l.t}</td><td>${l.s}</td><td><b>${l.d}</b></td><td>${l.r}</td></tr>`).join(""):'<tr><td colspan="4">No decisions yet.</td></tr>'}
+function fillStaff(){const ac=$("ac").value;$("st").innerHTML=S.filter(x=>x.ac===ac).map(x=>`<option value="${x.id}">${x.n} (${x.role})</option>`).join("");$("cap").value=ACC[ac].cap;$("ap").value=ACC[ac].ap;fillSt()}
+function fillSt(){const p=S.find(x=>x.id===$("st").value);const all=[...new Set(S.filter(x=>x.ac===p.ac).flatMap(x=>x.tr))];$("sn").innerHTML=all.map(x=>`<option>${x}</option>`).join("");facts()}
+$("qs").innerHTML='<option value="">Custom (use the fields below)</option>'+Q.map((q,i)=>`<option value="${i}">${q[0]}</option>`).join("");
+$("ac").innerHTML=Object.keys(ACC).map(x=>`<option>${x}</option>`).join("");fillStaff();
+$("qs").onchange=()=>{const q=Q[$("qs").value];if(!q)return;$("ac").value=q[1];fillStaff();$("st").value=q[2];fillSt();$("sn").value=q[3];$("dt").value=q[4];$("hr").value=q[5];facts();$("ev").click()};
+$("ac").onchange=()=>{$("qs").value="";fillStaff()};$("st").onchange=()=>{$("qs").value="";fillSt()};
+$("ev").onclick=()=>{const a=cur(),r=ev(a);show(r);log(a,r)};
+$("run").onclick=()=>{Q.forEach((q,i)=>{const a={sid:q[2],sn:q[3],dt:q[4],hr:q[5],cap:ACC[q[1]].cap,ap:ACC[q[1]].ap,ac:q[1],sc:q[0]};const r=ev(a);log(a,r)})};
+$("cl").onclick=()=>{LOG=[];try{localStorage.removeItem("swlog")}catch(e){}draw()};
+try{LOG=JSON.parse(localStorage.getItem("swlog")||"[]")}catch(e){LOG=[]}draw();
+const AC=[["UrbanMart",110,.64],["FreshBowl",84,.38],["CarePoint Clinics",60,.71],["QuickKart",48,.67],["Spice Route",36,.41],["MedAxis Labs",30,.80],["FitZone",22,.35],["Brew & Co",18,.29]];
+function imp(){const s=$("sh").value/100;$("shv").textContent=Math.round(s*100)+"%";$("im").innerHTML=AC.map(a=>`<tr><td>${a[0]}</td><td>${a[1]}</td><td>${Math.round(a[2]*100)}%</td><td><b>${(100*(s+(1-s)*a[2])).toFixed(1)}%</b></td></tr>`).join("");$("kp").textContent=Math.round(100*(s+(1-s)*.38))+"%"}
+$("sh").oninput=imp;imp();$("qs").value="0";$("qs").onchange();
+</script></body></html>
